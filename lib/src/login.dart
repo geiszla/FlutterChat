@@ -32,15 +32,18 @@ class Login extends StatelessWidget {
     Scrollable.ensureVisible(context);
 
     List<Widget> formElements = <Widget> [
-      new InputField(
-        labelText: 'Username',
-        controller: usernameController,
+      new Column(
+        children: <Widget>[
+          new InputField(
+          labelText: 'Username',
+          controller: usernameController,
+          ),
+          new InputField(
+            labelText: 'Server Name/IP',
+            controller: serverController,
+          )
+        ],
       ),
-      new InputField(
-        labelText: 'Server Name/IP',
-        controller: serverController,
-      ),
-      new SizedBox(height: 50.0),
       new RaisedButton(
         child: new Text('Connect'),
         onPressed: () => _login(context)
@@ -50,8 +53,7 @@ class Login extends StatelessWidget {
     bool isKeyboardHidden = MediaQuery.of(context).viewInsets.bottom == 0;
     if (isKeyboardHidden) {
       final List<Widget> logoElements = <Widget> [
-        new Image(image: logo, width: 200.0, height: 200.0,),
-        new SizedBox(height: 50.0)
+        new Image(image: logo, width: 133.0, height: 133.0,)
       ];
 
       logoElements.addAll(formElements);
@@ -60,8 +62,9 @@ class Login extends StatelessWidget {
 
     final Widget defaultContent = new Form(
       child: new Padding (
-        padding: new EdgeInsets.fromLTRB(50.0, paddingBottom, 50.0, paddingBottom),
+        padding: new EdgeInsets.fromLTRB(50.0, 0.0, 50.0, 0.0),
         child: new Column (
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: formElements
         )
