@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../server.dart';
 import '../user.dart';
 import '../util.dart';
+import 'chat.dart';
 
 class Users extends StatefulWidget {
   Users({this.user, this.logout, this.server});
@@ -39,6 +40,16 @@ class UsersState extends State<Users> {
     });
   }
 
+  void _openChat(String username) {
+    Navigator.of(context).push(
+      new MaterialPageRoute(
+        builder: (context) {
+          return new Chat(partnerUsername: username);
+        }
+      )
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,9 +77,12 @@ class UsersState extends State<Users> {
       usersWidget = new Column(
         children: _onlineUsers.map((username) {
           return new ListTile(
-            leading: const Icon(Icons.account_circle),
+            leading: new CircleAvatar(
+                child: new Text(username[0].toUpperCase())
+            ),
             title: new Text(username),
-            subtitle: new Text('Last message')
+            subtitle: new Text('Last message'),
+            onTap: () => _openChat(username),
           );
         }).toList()
       );
