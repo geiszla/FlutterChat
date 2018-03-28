@@ -3,8 +3,6 @@ import '../user.dart';
 
 const List<String> StateStrings = const ['Connecting...', 'Connected',
 'Disconnecting...', 'Disconnected'];
-const List<String> ActionStrings = const ['Connect', 'Disconnect', 'Disconnect',
-'Connect'];
 
 class Login extends StatelessWidget {
   Login({this.login, this.state});
@@ -25,24 +23,22 @@ class Login extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double paddingBottom = MediaQuery.of(context).size.height / 9;
     AssetImage logo = Theme.of(context).brightness == Brightness.dark
       ? new AssetImage('assets/flutter_logo_dark.png')
       : new AssetImage('assets/flutter_logo.png');
-    Scrollable.ensureVisible(context);
 
     List<Widget> formElements = <Widget> [
       new Column(
         children: <Widget>[
           new InputField(
-          labelText: 'Username',
-          controller: usernameController,
+              labelText: 'Username',
+              controller: usernameController
           ),
           new InputField(
-            labelText: 'Server Name/IP',
-            controller: serverController,
+              labelText: 'Server Name/IP',
+              controller: serverController
           )
-        ],
+        ]
       ),
       new RaisedButton(
         child: new Text('Connect'),

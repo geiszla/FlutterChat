@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-void showAlert(String content, BuildContext context) {
+void showSnackbar(String content, BuildContext context) {
   SnackBar snackBar = new SnackBar(
     content: new Text(content)
   );
@@ -9,13 +9,13 @@ void showAlert(String content, BuildContext context) {
 }
 
 void log(String logEntry) {
-  print('[Info] ' + logEntry);
+  print('[Info] $logEntry');
 }
 
 void logWarning(String logEntry) {
-  print('[Warning] ' + logEntry);
+  print('[Warning] $logEntry');
 }
 
 void logError(String logEntry) {
-  print('[Error] ' + logEntry);
+  print('[Error] $logEntry');
 }
