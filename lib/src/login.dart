@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../user.dart';
 
-const List<String> StateStrings = const ['Connecting...', 'Connected',
-'Disconnecting...', 'Disconnected'];
-
 class Login extends StatelessWidget {
   Login({this.login, this.state});
 
@@ -11,18 +8,32 @@ class Login extends StatelessWidget {
   final Function login;
 
   final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
-  final TextEditingController usernameController = new TextEditingController();
-  final TextEditingController serverController = new TextEditingController();
+  final TextEditingController _usernameController = new TextEditingController();
+  final TextEditingController _serverController = new TextEditingController();
 
   void _login(context) {
-    String username = usernameController.text;
-    String serverName = serverController.text;
+    String username = _usernameController.text;
+    String serverName = _serverController.text;
 
     login(username, serverName, context);
   }
 
   @override
   Widget build(BuildContext context) {
+    // If user is connecting, show loading screen
+    if (state == UserState.connecting) {
+      return new Center(
+        child: new Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            new CircularProgressIndicator(),
+            new SizedBox(height: 50.0),
+            new Text('Connecting...', style: _biggerFont)
+          ]
+        )
+      );
+    }
+
     AssetImage logo = Theme.of(context).brightness == Brightness.dark
       ? new AssetImage('assets/flutter_logo_dark.png')
       : new AssetImage('assets/flutter_logo.png');
@@ -32,11 +43,11 @@ class Login extends StatelessWidget {
         children: <Widget>[
           new InputField(
               labelText: 'Username',
-              controller: usernameController
+              controller: _usernameController
           ),
           new InputField(
               labelText: 'Server Name/IP',
-              controller: serverController
+              controller: _serverController
           )
         ]
       ),
@@ -46,6 +57,7 @@ class Login extends StatelessWidget {
       )
     ];
 
+    // If keyboard is closed, show logo
     bool isKeyboardHidden = MediaQuery.of(context).viewInsets.bottom == 0;
     if (isKeyboardHidden) {
       final List<Widget> logoElements = <Widget> [
@@ -56,28 +68,17 @@ class Login extends StatelessWidget {
       formElements = logoElements;
     }
 
-    final Widget defaultContent = new Form(
-      child: new Padding (
-        padding: new EdgeInsets.fromLTRB(50.0, 0.0, 50.0, 0.0),
-        child: new Column (
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: formElements
+    return new Center(
+      child: new Form(
+        child: new Padding (
+          padding: new EdgeInsets.fromLTRB(50.0, 0.0, 50.0, 0.0),
+          child: new Column (
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: formElements
+          )
         )
       )
-    );
-
-    final Widget loadingContent = new Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        new CircularProgressIndicator(),
-        new SizedBox(height: 50.0),
-        new Text('Connecting...', style: _biggerFont)
-      ]
-    );
-
-    return new Center(
-      child: state == UserState.connecting ? loadingContent : defaultContent
     );
   }
 }

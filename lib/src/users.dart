@@ -58,22 +58,8 @@ class UsersState extends State<Users> {
 
   @override
   Widget build(BuildContext context) {
-    Widget usersWidget = new Center(
-      child: new Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          new Text('No online users.', style: _biggerFont),
-          new SizedBox(height: 50.0),
-          new RaisedButton(
-            child: new Text('Log out'),
-            onPressed: widget.logout
-          )
-        ]
-      )
-    );
-
+    Widget usersWidget;
     if (_onlineUsers != null && _onlineUsers.length > 0) {
-      print(_onlineUsers);
       usersWidget = new Column(
         children: _onlineUsers.map((username) {
           return new ListTile(
@@ -85,6 +71,20 @@ class UsersState extends State<Users> {
             onTap: () => _openChat(username),
           );
         }).toList()
+      );
+    } else {
+      usersWidget = new Center(
+        child: new Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            new Text('No online users.', style: _biggerFont),
+            new SizedBox(height: 50.0),
+            new RaisedButton(
+              child: new Text('Log out'),
+              onPressed: widget.logout
+            )
+          ]
+        )
       );
     }
 

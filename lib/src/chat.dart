@@ -73,12 +73,12 @@ class ChatMessage extends StatelessWidget {
             children: <Widget>[
               new Container(
                 margin: const EdgeInsets.only(top: 5.0),
-                child: new Text(text),
-              ),
-            ],
-          ),
-        ],
-      ),
+                child: new Text(text)
+              )
+            ]
+          )
+        ]
+      )
     );
   }
 }

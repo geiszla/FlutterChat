@@ -6,55 +6,52 @@ import '../util.dart';
 import 'login.dart';
 import 'users.dart';
 
-const List<String> StateStrings = const ['Connecting...', 'Connected',
-  'Disconnecting...', 'Disconnected', 'Registered', 'In conversation'];
-
 class App extends StatefulWidget {
   @override
   AppState createState() => new AppState();
 }
 
 class AppState extends State<App> {
-  Server server;
-  User user;
-  String username;
+  Server _server;
+  User _user;
+  String _username;
   bool _isNightModeOn = false;
 
   void login(String username, String serverName, BuildContext context) async {
     // TODO: [1] Parse port from server name
     setState(() {
-      // Includes default username and server name values for testing
-      this.username = username != '' ? username : 'testuser';
-      server = new Server(serverName != '' ? serverName : '192.168.0.98',
+      // Includes default username and server name for testing
+      this._username = username != '' ? username : 'testuser';
+      _server = new Server(serverName != '' ? serverName : '192.168.0.98',
         9999);
 
-      user = new User(this.username);
-      user.state = UserState.connecting;
+      _user = new User(this._username);
+      _user.state = UserState.connecting;
     });
 
+    print('----------New Session----------');
+    log('Connecting to ${_server.host} on port ${_server.port.toString()}...');
+
     try {
-      print('----------New Session----------');
-      log('Connecting to ${server.host} on port ${server.port.toString()}...');
+      await _server.connect();
+      _server.register(this._username);
 
-      await server.connect();
-      server.register(this.username);
-      setState(() => user.state = UserState.connected);
-
+      setState(() => _user.state = UserState.connected);
       log('Login successful.');
     } catch(exception) {
       logError("Couldn't log in.");
       showSnackbar('Connection failed. Error: ${exception.osError.message}',
         context);
 
-      setState(() => user.state = UserState.disconnected);
+      setState(() => _user.state = UserState.disconnected);
     }
   }
 
   void logout() {
-    setState(() => user.state = UserState.disconnecting);
+    setState(() => _user.state = UserState.disconnecting);
 
     try {
-      server.disconnect(callback: () {
+      _server.disconnect(callback: () {
         log('Logout successful.');
         print('----------End of Session----------');
       });
@@ -62,19 +59,18 @@ class AppState extends State<App> {
       logWarning('An error occurred while disconnecting from server.');
     }
 
-    setState(() => user.state = UserState.disconnected);
+    setState(() => _user.state = UserState.disconnected);
   }
 
   void _showInfo(context) {
     showDialog(builder: (BuildContext context) {
-      String stateString = server != null ? StateStrings[user.state.index] :
-        'Disconnected';
+      String stateString = _server != null ? _user.stateString : 'Disconnected';
 
-      bool isNotDisconnected = server != null
-        && user.state != UserState.disconnected;
+      bool isNotDisconnected = _server != null
+        && _user.state != UserState.disconnected;
       String serverString = isNotDisconnected
-        ? '${server.host}:${server.port.toString()}' : 'N/A';
-      String usernameString = isNotDisconnected ? user.name : 'N/A';
+        ? '${_server.host}:${_server.port.toString()}' : 'N/A';
+      String usernameString = isNotDisconnected ? _user.name : 'N/A';
 
       AlertDialog infoAlert = new AlertDialog(
         title: new Text('Status Information'),
@@ -114,10 +110,6 @@ class AppState extends State<App> {
       );
     }
 
-    Widget body = user?.state == UserState.connected
-      ? new Users(user: user, logout: logout, server: server)
-      : new Login(login: login, state: user?.state);
-
     return new MaterialApp(
       theme: theme,
       home: new Scaffold(
@@ -139,7 +131,9 @@ class AppState extends State<App> {
             )
           ]
         ),
-        body: body
+        body: _user?.state == UserState.connected
+          ? new Users(user: _user, logout: logout, server: _server)
+          : new Login(login: login, state: _user?.state)
       )
     );
   }
