@@ -93,12 +93,18 @@ class AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
+    TextTheme accentTextTheme = Theme.of(context).accentTextTheme;
+    TextTheme newTextTheme = accentTextTheme.copyWith(
+        body1: new TextStyle(color: Colors.white)
+    );
+
     ThemeData theme;
     if (_isNightModeOn) {
       theme = new ThemeData(
         brightness: Brightness.dark,
         buttonColor: Colors.grey[800],
-        accentColor: Colors.white
+        accentColor: Colors.white,
+        accentTextTheme: newTextTheme
       );
     } else {
       theme = new ThemeData(
@@ -106,7 +112,8 @@ class AppState extends State<App> {
         buttonColor: Colors.blue,
         buttonTheme: new ButtonThemeData(
           textTheme: ButtonTextTheme.primary
-        )
+        ),
+        accentTextTheme: newTextTheme
       );
     }
 

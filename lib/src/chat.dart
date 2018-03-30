@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 
-class Chat extends StatelessWidget {
-  Chat({this.partnerUsername});
+import '../conversation.dart';
+import '../user.dart';
 
-  final String partnerUsername;
-  final List<String> _messages = ['message1', 'message2', 'message3'];
+class Chat extends StatelessWidget {
+  Chat({this.user, this.conversation});
+
+  final User user;
+  final Conversation conversation;
 
   @override
   build(BuildContext context) {
-    List<Widget> messageWidgets = _messages.map((message) =>
-      new ChatMessage(text: message)
+    List<Widget> messageWidgets = conversation.messages.map((message) =>
+      new ChatMessage(message: message, currentUser: user)
     ).toList().reversed.toList();
 
     return new Scaffold(
       appBar: new AppBar(
-        title: new Text('$partnerUsername (online)')
+        title: new Text('${conversation.partnerUsername} (online)')
       ),
       body: new Container(
         margin: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -25,17 +28,20 @@ class Chat extends StatelessWidget {
                 padding: new EdgeInsets.all(8.0),
                 reverse: true,
                 itemBuilder: (_, int index) => messageWidgets[index],
-                itemCount: 3,
+                itemCount: messageWidgets.length,
               ),
             ),
             new Divider(height: 1.0),
             new Row(
               children: <Widget>[
                 new Flexible(
-                  child: new TextField(
-                    decoration: new InputDecoration.collapsed(
-                      hintText: "Send a message"),
-                  ),
+                  child: new Container(
+                    margin: const EdgeInsets.fromLTRB(8.0, 0.0, 0.0, 0.0),
+                    child: new TextField(
+                      decoration: new InputDecoration.collapsed(
+                        hintText: "Send a message"),
+                    ),
+                  )
                 ),
                 new Container(
                   margin: new EdgeInsets.symmetric(horizontal: 4.0),
@@ -54,30 +60,45 @@ class Chat extends StatelessWidget {
 }
 
 class ChatMessage extends StatelessWidget {
-  ChatMessage({this.text});
+  ChatMessage({this.message, this.currentUser});
 
-  final String text;
+  final Message message;
+  final User currentUser;
 
   @override
   Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+    Color backgroundColor = message.isFromUser ? theme.primaryColor : null;
+    TextStyle textStyle = message.isFromUser ? theme.accentTextTheme.body1
+        : null;
+    Alignment messageAlignment = message.isFromUser ? Alignment.centerRight
+        : Alignment.centerLeft;
+
+    final EdgeInsetsGeometry ownMargin = new EdgeInsets.fromLTRB(100.0, 0.0,
+        10.0, 0.0);
+    final EdgeInsetsGeometry partnerMargin = new EdgeInsets.fromLTRB(10.0, 0.0,
+        100.0, 0.0);
+
     return new Container(
-      margin: const EdgeInsets.symmetric(vertical: 10.0),
-      child: new Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          new Container(
-            margin: const EdgeInsets.only(right: 16.0)
-          ),
-          new Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              new Container(
-                margin: const EdgeInsets.only(top: 5.0),
-                child: new Text(text)
+      margin: const EdgeInsets.symmetric(vertical: 5.0),
+      child: new Container(
+        alignment: messageAlignment,
+        margin: message.isFromUser ? ownMargin : partnerMargin,
+        child: new Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            new Card(
+                color: backgroundColor,
+                child: new Container(
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 8.0
+                  ),
+                  child: new Text(message.text, style: textStyle)
+                )
               )
-            ]
-          )
-        ]
+          ]
+        )
       )
     );
   }

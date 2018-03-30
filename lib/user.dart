@@ -18,4 +18,8 @@ class User {
   String get stateString {
     return _stateStrings[state.index];
   }
+
+  bool isEqual(User otherUser) {
+    return _name == otherUser.name;
+  }
 }

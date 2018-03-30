@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../user.dart';
+import 'loading.dart';
 
 class Login extends StatelessWidget {
   Login({this.login, this.state});
@@ -7,7 +9,6 @@ class Login extends StatelessWidget {
   final UserState state;
   final Function login;
 
-  final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
   final TextEditingController _usernameController = new TextEditingController();
   final TextEditingController _serverController = new TextEditingController();
 
@@ -22,16 +23,7 @@ class Login extends StatelessWidget {
   Widget build(BuildContext context) {
     // If user is connecting, show loading screen
     if (state == UserState.connecting) {
-      return new Center(
-        child: new Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            new CircularProgressIndicator(),
-            new SizedBox(height: 50.0),
-            new Text('Connecting...', style: _biggerFont)
-          ]
-        )
-      );
+      return new Loading(text: 'Connecting...');
     }
 
     AssetImage logo = Theme.of(context).brightness == Brightness.dark

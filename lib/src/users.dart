@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../server.dart';
 import '../user.dart';
 import '../util.dart';
+import '../conversation.dart';
+
 import 'chat.dart';
+import 'loading.dart';
 
 class Users extends StatefulWidget {
   Users({this.user, this.logout, this.server});
@@ -44,7 +47,21 @@ class UsersState extends State<Users> {
     Navigator.of(context).push(
       new MaterialPageRoute(
         builder: (context) {
-          return new Chat(partnerUsername: username);
+          Conversation conversation = new Conversation(username);
+          conversation.messages.add(new Message(text:
+          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm'
+          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm',
+              isFromUser: true));
+          conversation.messages.add(new Message(text:
+          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm'
+          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm',
+              isFromUser: false));
+          conversation.messages.add(new Message(text: 'message2',
+              isFromUser: false));
+          conversation.messages.add(new Message(text: 'message3',
+              isFromUser: true));
+
+          return new Chat(conversation: conversation, user: widget.user);
         }
       )
     );
@@ -59,7 +76,12 @@ class UsersState extends State<Users> {
   @override
   Widget build(BuildContext context) {
     Widget usersWidget;
-    if (_onlineUsers != null && _onlineUsers.length > 0) {
+
+    if (_onlineUsers == null) {
+      return new Loading(text: 'Looking for online users...');
+    }
+
+    if (_onlineUsers.length > 0) {
       usersWidget = new Column(
         children: _onlineUsers.map((username) {
           return new ListTile(
