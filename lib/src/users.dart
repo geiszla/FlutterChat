@@ -25,6 +25,8 @@ class UsersState extends State<Users> {
   final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
 
   void _getUsers() {
+    setState(() => _onlineUsers = null);
+
     widget.server.getUsers((response) {
       RegExp listRegex = new RegExp(r"WHO\s*\[((?:'[^']*',?\s*)*)\]");
       Match listMatch = listRegex.firstMatch(response);
@@ -102,8 +104,8 @@ class UsersState extends State<Users> {
             new Text('No online users.', style: _biggerFont),
             new SizedBox(height: 50.0),
             new RaisedButton(
-              child: new Text('Log out'),
-              onPressed: widget.logout
+              child: new Text('Refresh'),
+              onPressed: _getUsers
             )
           ]
         )

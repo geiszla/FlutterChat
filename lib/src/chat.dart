@@ -3,21 +3,34 @@ import 'package:flutter/material.dart';
 import '../conversation.dart';
 import '../user.dart';
 
-class Chat extends StatelessWidget {
+class Chat extends StatefulWidget {
   Chat({this.user, this.conversation});
 
   final User user;
   final Conversation conversation;
 
   @override
+  ChatState createState() => new ChatState();
+}
+
+class ChatState extends State<Chat> {
+  String _inputText = '';
+
+  @override
   build(BuildContext context) {
-    List<Widget> messageWidgets = conversation.messages.map((message) =>
-      new ChatMessage(message: message, currentUser: user)
+    Message lastMessage;
+    List<Widget> messageWidgets = widget.conversation.messages.map((message) {
+      ChatMessage currentWidget = new ChatMessage(message: message,
+          lastMessage: lastMessage, currentUser: widget.user);
+      lastMessage = message;
+
+      return currentWidget;
+    }
     ).toList().reversed.toList();
 
     return new Scaffold(
       appBar: new AppBar(
-        title: new Text('${conversation.partnerUsername} (online)')
+        title: new Text('${widget.conversation.partnerUsername} (online)')
       ),
       body: new Container(
         margin: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -38,6 +51,7 @@ class Chat extends StatelessWidget {
                   child: new Container(
                     margin: const EdgeInsets.fromLTRB(8.0, 0.0, 0.0, 0.0),
                     child: new TextField(
+                      onChanged: (text) => setState(() => _inputText = text),
                       decoration: new InputDecoration.collapsed(
                         hintText: "Send a message"),
                     ),
@@ -47,7 +61,7 @@ class Chat extends StatelessWidget {
                   margin: new EdgeInsets.symmetric(horizontal: 4.0),
                   child: new IconButton(
                     icon: new Icon(Icons.send),
-                    onPressed: () {}
+                    onPressed: _inputText != '' ? () {} : null
                   )
                 )
               ]
@@ -60,9 +74,10 @@ class Chat extends StatelessWidget {
 }
 
 class ChatMessage extends StatelessWidget {
-  ChatMessage({this.message, this.currentUser});
+  ChatMessage({this.message, this.lastMessage, this.currentUser});
 
   final Message message;
+  final Message lastMessage;
   final User currentUser;
 
   @override
@@ -74,16 +89,15 @@ class ChatMessage extends StatelessWidget {
     Alignment messageAlignment = message.isFromUser ? Alignment.centerRight
         : Alignment.centerLeft;
 
-    final EdgeInsetsGeometry ownMargin = new EdgeInsets.fromLTRB(100.0, 0.0,
-        10.0, 0.0);
-    final EdgeInsetsGeometry partnerMargin = new EdgeInsets.fromLTRB(10.0, 0.0,
-        100.0, 0.0);
+    final double leftMargin = message.isFromUser ? 100.0 : 10.0;
+    final double rightMargin = message.isFromUser ? 10.0 : 100.0;
+
+    final double topMargin = message.isFromUser == lastMessage?.isFromUser
+        ? 0.0 : 10.0;
 
     return new Container(
-      margin: const EdgeInsets.symmetric(vertical: 5.0),
-      child: new Container(
         alignment: messageAlignment,
-        margin: message.isFromUser ? ownMargin : partnerMargin,
+        margin: new EdgeInsets.fromLTRB(leftMargin, topMargin, rightMargin, 0.0),
         child: new Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -99,7 +113,6 @@ class ChatMessage extends StatelessWidget {
               )
           ]
         )
-      )
     );
   }
 }

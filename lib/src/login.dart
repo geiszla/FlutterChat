@@ -4,10 +4,11 @@ import '../user.dart';
 import 'loading.dart';
 
 class Login extends StatelessWidget {
-  Login({this.login, this.state});
+  Login({this.login, this.state, this.usernameError});
 
   final UserState state;
   final Function login;
+  final String usernameError;
 
   final TextEditingController _usernameController = new TextEditingController();
   final TextEditingController _serverController = new TextEditingController();
@@ -33,13 +34,21 @@ class Login extends StatelessWidget {
     List<Widget> formElements = <Widget> [
       new Column(
         children: <Widget>[
-          new InputField(
+          new TextField(
+            controller: _usernameController,
+            decoration: new InputDecoration(
               labelText: 'Username',
-              controller: _usernameController
+              errorText: usernameError
+            ),
+            autocorrect: false
           ),
-          new InputField(
+          // TODO: Don't smart-change text on input
+          new TextField(
+            controller: _serverController,
+            decoration: new InputDecoration(
               labelText: 'Server Name/IP',
-              controller: _serverController
+            ),
+            autocorrect: false
           )
         ]
       ),
@@ -70,23 +79,6 @@ class Login extends StatelessWidget {
             children: formElements
           )
         )
-      )
-    );
-  }
-}
-
-class InputField extends StatelessWidget {
-  InputField({this.labelText, this.controller});
-
-  final String labelText;
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return new TextField(
-      controller: controller,
-      decoration: new InputDecoration(
-        labelText: labelText,
       )
     );
   }
