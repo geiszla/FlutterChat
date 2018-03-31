@@ -14,16 +14,26 @@ class App extends StatefulWidget {
 class AppState extends State<App> {
   Server _server;
   User _user;
+
   String _username;
+  String _usernameError;
+
   bool _isNightModeOn = false;
 
-  void login(String username, String serverName, BuildContext context) async {
-    // TODO: [1] Parse port from server name
+  void _login(String username, String serverName, BuildContext context) async {
     setState(() {
-      // Includes default username and server name for testing
+      // Includes default username and server name/port for testing
       this._username = username != '' ? username : 'testuser';
-      _server = new Server(serverName != '' ? serverName : '192.168.0.98',
-        9999);
+      _usernameError = null;
+
+      RegExp serverRegex = new RegExp(r"([^:]*):?([0-9]{0,5})");
+      Match serverMatch = serverRegex.firstMatch(serverName);
+
+      String hostName = serverMatch.group(1) != '' ? serverMatch.group(1)
+          : '192.168.0.98';
+      int port = serverMatch.group(2) != '' ? int.parse(serverMatch.group(2))
+          : 9999;
+      _server = new Server(hostName, port);
 
       _user = new User(this._username);
       _user.state = UserState.connecting;
@@ -34,10 +44,17 @@ class AppState extends State<App> {
 
     try {
       await _server.connect();
-      _server.register(this._username);
+      _server.register(this._username, (String _) {
+        setState(() => _user.state = UserState.connected);
+        log('Login successful.');
+      }, onError: (response) {
+        setState(() {
+          _user.state = UserState.disconnected;
+          _usernameError = response;
+        });
 
-      setState(() => _user.state = UserState.connected);
-      log('Login successful.');
+        logError("Couldn't log in.");
+      });
     } catch(exception) {
       logError("Couldn't log in.");
       showSnackbar('Connection failed. Error: ${exception.osError.message}',
@@ -47,7 +64,7 @@ class AppState extends State<App> {
     }
   }
 
-  void logout() {
+  void _logout() {
     setState(() => _user.state = UserState.disconnecting);
 
     try {
@@ -91,6 +108,27 @@ class AppState extends State<App> {
     }, context: context);
   }
 
+  void _handleLogoutPress(BuildContext context) {
+    showDialog(context: context, builder: (BuildContext context) {
+      return new AlertDialog(
+        title: new Text('Do you want to log out?'),
+        actions: <Widget>[
+          new FlatButton(
+            child: new Text('Cancel'),
+            onPressed: () => Navigator.pop(context)
+          ),
+          new FlatButton(
+            child: new Text('Log out'),
+            onPressed: () {
+              _logout();
+              Navigator.pop(context);
+            }
+          )
+        ],
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     TextTheme accentTextTheme = Theme.of(context).accentTextTheme;
@@ -121,7 +159,14 @@ class AppState extends State<App> {
       theme: theme,
       home: new Scaffold(
         appBar: new AppBar(
-          leading: new Icon(Icons.dehaze),
+          leading: _user?.isLoggedIn == true ? new Builder(
+            builder: (BuildContext context) {
+              return new IconButton(
+                icon: new Icon(Icons.power_settings_new),
+                onPressed: () => _handleLogoutPress(context)
+              );
+            }
+          ) : null,
           title: new Text('Flutter Chat'),
           actions: <Widget>[
             new IconButton(
@@ -139,8 +184,9 @@ class AppState extends State<App> {
           ]
         ),
         body: _user?.state == UserState.connected
-          ? new Users(user: _user, logout: logout, server: _server)
-          : new Login(login: login, state: _user?.state)
+          ? new Users(user: _user, logout: _logout, server: _server)
+          : new Login(login: _login, state: _user?.state,
+              usernameError: _usernameError)
       )
     );
   }

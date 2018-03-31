@@ -8,12 +8,17 @@ class Server {
   Socket _socket;
   StreamSubscription _inputStream;
 
+  Function _onData;
+  Function _onError;
+
   String get host => _host;
   int get port => _port;
 
   Server(String host, int port) {
     this._host = host;
     this._port = port;
+    this._onData = () {};
+    this._onError = () {};
   }
 
   Future<void> connect() async {
@@ -25,7 +30,7 @@ class Server {
     try {
       _socket = await Socket.connect(_host, _port);
       log('Socket opened successfully.');
-      _inputStream = _socket.listen((event) => _logStream(event));
+      _inputStream = _socket.listen((event) => _handleSocketData(event));
 
       _socket.done.then((_) {
         log('Socket has been closed.');
@@ -49,15 +54,12 @@ class Server {
     }
 
     try {
-      _sendString('DISCONNECT');
-      _inputStream.onData((event) => _logStream(event,
-        callback: (response) async {
-          if (response.contains('Goodbye')) {
-            await _socket.close();
-            if (callback != null) callback();
-          }
+      _sendString('DISCONNECT', onData: (response) async {
+        if (response.contains('Goodbye')) {
+          await _socket.close();
+          if (callback != null) callback();
         }
-      ));
+      });
     } catch(exception) {
       logError('Error while closing socket.');
       logError(exception.toString());
@@ -65,37 +67,55 @@ class Server {
     }
   }
 
-  void register(String username) {
+  void register(String username, Function onFinish, {Function onError}) {
     try {
-      _sendString('REGISTER $username');
-      log('Registered as "$username".');
+      _sendString('REGISTER $username', onData: (response) {
+        if (!response.contains('Welcome ')) {
+          logError(response);
+          if (onError != null) onError(response);
+          return;
+        }
+
+        log('Registered as "$username".');
+        onFinish(response);
+      }, onError: onError);
     } catch (exception) {
-      logError("Couldn't send register command.");
+      logError("Couldn't register user.");
       throw(exception);
     }
   }
 
+  // TODO: [4] Invite user for conversation and send message
   void getUsers(Function callback) {
     try {
-      _sendString('WHO');
-      _inputStream.onData((event) => _logStream(event, callback: callback));
+      _sendString('WHO', onData: callback);
     } catch (exception) {
       throw(exception);
     }
   }
 
-  void _logStream(event, {Function callback}) {
+  void _handleSocketData(event) {
     String response = new String.fromCharCodes(event);
-    log('Message received: $response');
-    if (callback != null) callback(response);
+    
+    if (response.contains('ERROR')) {
+      RegExp errorRegex = new RegExp(r'ERROR\s*(.*)');
+      Match errorMatch = errorRegex.firstMatch(response);
+      logError(errorMatch.group(1));
+      _onError(errorMatch.group(1));
+    } else {
+      log('Message received: $response');
+      _onData(response);
+    }
   }
 
-  void _sendString(String data) {
+  void _sendString(String data, {Function onData, Function onError}) {
     if (_socket == null) {
       logError('Socket is not open.');
       throw new StateError('Socket is not open.');
     }
 
+    _onData = onData;
+    _onError = onError;
     _socket.write(data);
   }
 }

@@ -13,6 +13,9 @@ class User {
 
   String _name;
   UserState state;
+  bool get isLoggedIn {
+    return state != UserState.disconnected && state != UserState.connecting;
+  }
 
   String get name => _name;
   String get stateString {
