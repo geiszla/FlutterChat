@@ -9,11 +9,10 @@ import 'chat.dart';
 import 'loading.dart';
 
 class Users extends StatefulWidget {
-  Users({this.user, this.logout, this.server});
-
   final User user;
-  final Function logout;
   final Server server;
+
+  Users({this.user, this.server});
 
   @override
   UsersState createState() => new UsersState();
@@ -21,6 +20,7 @@ class Users extends StatefulWidget {
 
 class UsersState extends State<Users> {
   List<String> _onlineUsers;
+  Map<String, Conversation> _conversations = new Map<String, Conversation>();
 
   final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
 
@@ -46,33 +46,70 @@ class UsersState extends State<Users> {
   }
 
   void _openChat(String username) {
+    if (_conversations[username] == null) {
+      _conversations[username] = new Conversation(username);
+    }
+
     Navigator.of(context).push(
       new MaterialPageRoute(
         builder: (context) {
-          Conversation conversation = new Conversation(username);
-          conversation.messages.add(new Message(text:
-          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm'
-          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm',
-              isFromUser: true));
-          conversation.messages.add(new Message(text:
-          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm'
-          'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm',
-              isFromUser: false));
-          conversation.messages.add(new Message(text: 'message2',
-              isFromUser: false));
-          conversation.messages.add(new Message(text: 'message3',
-              isFromUser: true));
-
-          return new Chat(conversation: conversation, user: widget.user);
+          return new Chat(
+            user: widget.user,
+            conversation: _conversations[username],
+            sendMessage: _sendMessage,
+          );
         }
       )
     );
+  }
+
+  void _sendMessage(String message, String username) {
+    Conversation currentConversation = _conversations[username];
+    setState(() {
+      currentConversation.messages.add(
+        new Message(text: message, isFromUser: true)
+      );
+      currentChatState?.setState(() {});
+    });
+
+    if (!currentConversation.isActive) {
+      widget.server.inviteUser(username,
+          callback: (response) => _activateConversation(username));
+    } else {
+      widget.server.sendMessage(message, username,
+        (response) => currentConversation.messages.last.changeToSent());
+    }
+  }
+
+  void _activateConversation(username) {
+    if (_conversations[username] == null) {
+      _conversations[username] = new Conversation(username);
+    }
+
+    _conversations[username].isActive = true;
+    _conversations[username].messages.forEach((message) {
+      widget.server.sendMessage(message.text, username,
+              (response) => message.changeToSent());
+    });
   }
 
   @override
   void initState() {
     super.initState();
     _getUsers();
+
+    widget.server.onInvitation = (username) {
+      widget.server.acceptInvitation(username);
+      _activateConversation(username);
+    };
+    widget.server.onMessage = (message, username) {
+      setState(() {
+        _conversations[username].messages.add(
+            new Message(text: message, isFromUser: false)
+        );
+      });
+      currentChatState?.setState(() {});
+    };
   }
 
   @override
@@ -84,14 +121,27 @@ class UsersState extends State<Users> {
     }
 
     if (_onlineUsers.length > 0) {
+      // TODO: Change user Column to ListView
       usersWidget = new Column(
         children: _onlineUsers.map((username) {
+          Conversation currentConversation = _conversations[username];
+
+          String lastMessageString = '';
+          if (currentConversation != null) {
+            int messageCount = currentConversation.messages.length;
+            if (messageCount > 0) {
+              Message lastMessage = currentConversation.messages[messageCount - 1];
+              lastMessageString = lastMessage.isFromUser ? 'You: ' : '';
+              lastMessageString += lastMessage.text;
+            }
+          }
+
           return new ListTile(
             leading: new CircleAvatar(
                 child: new Text(username[0].toUpperCase())
             ),
             title: new Text(username),
-            subtitle: new Text('Last message'),
+            subtitle: new Text(lastMessageString),
             onTap: () => _openChat(username),
           );
         }).toList()
@@ -102,9 +152,9 @@ class UsersState extends State<Users> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             new Text('No online users.', style: _biggerFont),
-            new SizedBox(height: 50.0),
+            const SizedBox(height: 50.0),
             new RaisedButton(
-              child: new Text('Refresh'),
+              child: const Text('Refresh'),
               onPressed: _getUsers
             )
           ]

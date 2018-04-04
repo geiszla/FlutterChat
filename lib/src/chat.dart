@@ -3,82 +3,109 @@ import 'package:flutter/material.dart';
 import '../conversation.dart';
 import '../user.dart';
 
-class Chat extends StatefulWidget {
-  Chat({this.user, this.conversation});
+ChatState currentChatState;
 
+class Chat extends StatefulWidget {
   final User user;
   final Conversation conversation;
+  final Function sendMessage;
+
+  // TODO: [3] Required arguments
+  Chat({this.user, this.conversation, this.sendMessage});
 
   @override
-  ChatState createState() => new ChatState();
+  ChatState createState() {
+    currentChatState = new ChatState();
+    return currentChatState;
+  }
 }
 
 class ChatState extends State<Chat> {
   String _inputText = '';
+  TextEditingController _inputController = new TextEditingController();
+
+  void _sendMessage() {
+    widget.sendMessage(_inputText, widget.conversation.partnerUsername);
+    _inputController.clear();
+  }
 
   @override
   build(BuildContext context) {
-    Message lastMessage;
-    List<Widget> messageWidgets = widget.conversation.messages.map((message) {
-      ChatMessage currentWidget = new ChatMessage(message: message,
-          lastMessage: lastMessage, currentUser: widget.user);
-      lastMessage = message;
+    Widget chatContent;
+    if (widget.conversation.messages.length == 0) {
+      chatContent = new Center(
+        child: new Text(
+          'Send a message to start a conversation.',
+          style: const TextStyle(fontSize: 16.0)
+        )
+      );
+    } else {
+      Message lastMessage;
+      List<Widget> messageWidgets = widget.conversation.messages.map((message) {
+        ChatMessage currentWidget = new ChatMessage(message: message,
+            lastMessage: lastMessage, currentUser: widget.user);
+        lastMessage = message;
 
-      return currentWidget;
+        return currentWidget;
+      }).toList().reversed.toList();
+
+      chatContent = new Container(
+        margin: const EdgeInsets.symmetric(vertical: 10.0),
+        child: new ListView.builder(
+          reverse: true,
+          itemBuilder: (_, int index) => messageWidgets[index],
+          itemCount: messageWidgets.length,
+        )
+      );
     }
-    ).toList().reversed.toList();
 
     return new Scaffold(
       appBar: new AppBar(
         title: new Text('${widget.conversation.partnerUsername} (online)')
       ),
-      body: new Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: new Column(
-          children: <Widget> [
-            new Flexible(
-              child: new ListView.builder(
-                padding: new EdgeInsets.all(8.0),
-                reverse: true,
-                itemBuilder: (_, int index) => messageWidgets[index],
-                itemCount: messageWidgets.length,
-              ),
-            ),
-            new Divider(height: 1.0),
-            new Row(
+      body: new Column(
+        children: <Widget> [
+          new Flexible(
+            child: chatContent
+          ),
+          const Divider(height: 1.0),
+          new Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: new Row(
               children: <Widget>[
                 new Flexible(
                   child: new Container(
-                    margin: const EdgeInsets.fromLTRB(8.0, 0.0, 0.0, 0.0),
+                    margin: const EdgeInsets.only(left: 8.0),
                     child: new TextField(
                       onChanged: (text) => setState(() => _inputText = text),
-                      decoration: new InputDecoration.collapsed(
+                      controller: _inputController,
+                      decoration: const InputDecoration.collapsed(
                         hintText: "Send a message"),
                     ),
                   )
                 ),
                 new Container(
-                  margin: new EdgeInsets.symmetric(horizontal: 4.0),
+                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: new IconButton(
-                    icon: new Icon(Icons.send),
-                    onPressed: _inputText != '' ? () {} : null
+                    icon: const Icon(Icons.send),
+                    onPressed: _inputText != '' ? _sendMessage : null
                   )
                 )
               ]
             )
-          ]
-        )
+          )
+        ]
       )
     );
   }
 }
 
 class ChatMessage extends StatelessWidget {
-  ChatMessage({this.message, this.lastMessage, this.currentUser});
-
   final Message message;
   final Message lastMessage;
   final User currentUser;
+
+  ChatMessage({this.message, this.lastMessage, this.currentUser});
 
   @override
   Widget build(BuildContext context) {
@@ -89,10 +116,10 @@ class ChatMessage extends StatelessWidget {
     Alignment messageAlignment = message.isFromUser ? Alignment.centerRight
         : Alignment.centerLeft;
 
-    final double leftMargin = message.isFromUser ? 100.0 : 10.0;
-    final double rightMargin = message.isFromUser ? 10.0 : 100.0;
+    double leftMargin = message.isFromUser ? 100.0 : 20.0;
+    double rightMargin = message.isFromUser ? 20.0 : 100.0;
 
-    final double topMargin = message.isFromUser == lastMessage?.isFromUser
+    double topMargin = message.isFromUser == lastMessage?.isFromUser
         ? 0.0 : 10.0;
 
     return new Container(

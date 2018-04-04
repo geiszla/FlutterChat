@@ -1,28 +1,28 @@
 class Conversation {
+  // TODO: Public variables
   bool isActive;
   bool isInForeground;
   String partnerUsername;
 
-  List<Message> messages;
+  final List<Message> messages = new List<Message>();
 
   Conversation(String partnerUsername) {
     this.partnerUsername = partnerUsername;
 
     isActive = false;
     isInForeground = false;
-    messages = new List<Message>();
   }
 }
 
 class Message {
-  final bool isFromUser;
-  final String text;
-
   DateTime _sendTime;
   bool _isSent;
 
   DateTime get sendTime => _sendTime;
   bool get isSent => _isSent;
+
+  final bool isFromUser;
+  final String text;
 
   Message({this.isFromUser, this.text});
 

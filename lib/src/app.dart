@@ -21,22 +21,24 @@ class AppState extends State<App> {
   bool _isNightModeOn = false;
 
   void _login(String username, String serverName, BuildContext context) async {
+    // TODO: [2] Final variables
+    RegExp serverRegex = new RegExp(r'([^:]*):?([0-9]{0,5})');
+    Match serverMatch = serverRegex.firstMatch(serverName);
+
+    String hostName = serverMatch.group(1) != '' ? serverMatch.group(1)
+        : '192.168.0.98';
+    int port = serverMatch.group(2) != '' ? int.parse(serverMatch.group(2))
+        : 9999;
+
     setState(() {
       // Includes default username and server name/port for testing
-      this._username = username != '' ? username : 'testuser';
-      _usernameError = null;
-
-      RegExp serverRegex = new RegExp(r"([^:]*):?([0-9]{0,5})");
-      Match serverMatch = serverRegex.firstMatch(serverName);
-
-      String hostName = serverMatch.group(1) != '' ? serverMatch.group(1)
-          : '192.168.0.98';
-      int port = serverMatch.group(2) != '' ? int.parse(serverMatch.group(2))
-          : 9999;
-      _server = new Server(hostName, port);
-
+      _username = username != '' ? username : 'testuser';
       _user = new User(this._username);
       _user.state = UserState.connecting;
+
+      _usernameError = null;
+
+      _server = new Server(hostName, port);
     });
 
     print('----------New Session----------');
@@ -48,15 +50,19 @@ class AppState extends State<App> {
         setState(() => _user.state = UserState.connected);
         log('Login successful.');
       }, onError: (response) {
-        setState(() {
-          _user.state = UserState.disconnected;
-          _usernameError = response;
-        });
+        if (response.contains('Username')) {
+          setState(() {
+            _user.state = UserState.disconnected;
+             _usernameError = response;
+          });
 
-        logError("Couldn't log in.");
+          logError("Username already exists.");
+        }
+
+        // TODO: [1] Move error reporting to catch
       });
-    } catch(exception) {
-      logError("Couldn't log in.");
+    } catch (exception) {
+      logError("Disconnected.");
       showSnackbar('Connection failed. Error: ${exception.osError.message}',
         context);
 
@@ -90,15 +96,15 @@ class AppState extends State<App> {
       String usernameString = isNotDisconnected ? _user.name : 'N/A';
 
       AlertDialog infoAlert = new AlertDialog(
-        title: new Text('Status Information'),
+        title: const Text('Status Information'),
         content: new Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             new Text('State: $stateString'),
-            new SizedBox(height: 10.0),
+            const SizedBox(height: 10.0),
             new Text('Server: $serverString'),
-            new SizedBox(height: 10.0),
+            const SizedBox(height: 10.0),
             new Text('Username: $usernameString')
           ]
         )
@@ -111,14 +117,14 @@ class AppState extends State<App> {
   void _handleLogoutPress(BuildContext context) {
     showDialog(context: context, builder: (BuildContext context) {
       return new AlertDialog(
-        title: new Text('Do you want to log out?'),
+        title: const Text('Do you want to log out?'),
         actions: <Widget>[
           new FlatButton(
-            child: new Text('Cancel'),
+            child: const Text('Cancel'),
             onPressed: () => Navigator.pop(context)
           ),
           new FlatButton(
-            child: new Text('Log out'),
+            child: const Text('Log out'),
             onPressed: () {
               _logout();
               Navigator.pop(context);
@@ -133,7 +139,7 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     TextTheme accentTextTheme = Theme.of(context).accentTextTheme;
     TextTheme newTextTheme = accentTextTheme.copyWith(
-        body1: new TextStyle(color: Colors.white)
+        body1: const TextStyle(color: Colors.white)
     );
 
     ThemeData theme;
@@ -162,21 +168,21 @@ class AppState extends State<App> {
           leading: _user?.isLoggedIn == true ? new Builder(
             builder: (BuildContext context) {
               return new IconButton(
-                icon: new Icon(Icons.power_settings_new),
+                icon: const Icon(Icons.exit_to_app),
                 onPressed: () => _handleLogoutPress(context)
               );
             }
           ) : null,
-          title: new Text('Flutter Chat'),
+          title: const Text('Flutter Chat'),
           actions: <Widget>[
             new IconButton(
-              icon: new Icon(Icons.brightness_4),
+              icon: const Icon(Icons.brightness_4),
               onPressed: () => setState(() => _isNightModeOn = !_isNightModeOn)
             ),
             new Builder(
               builder: (BuildContext context) {
                 return new IconButton(
-                    icon: new Icon(Icons.info_outline),
+                    icon: const Icon(Icons.info_outline),
                     onPressed: () => _showInfo(context)
                 );
               }
@@ -184,7 +190,7 @@ class AppState extends State<App> {
           ]
         ),
         body: _user?.state == UserState.connected
-          ? new Users(user: _user, logout: _logout, server: _server)
+          ? new Users(user: _user, server: _server)
           : new Login(login: _login, state: _user?.state,
               usernameError: _usernameError)
       )

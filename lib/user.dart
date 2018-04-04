@@ -6,20 +6,20 @@ const List<String> _stateStrings = const ['Connecting...', 'Connected',
   'Disconnecting...', 'Disconnected', 'Registered', 'In conversation'];
 
 class User {
-  User(String name) {
-    _name = name;
-    state = UserState.disconnected;
-  }
-
   String _name;
+
   UserState state;
+  String get name => _name;
+  String get stateString {
+    return _stateStrings[state.index];
+  }
   bool get isLoggedIn {
     return state != UserState.disconnected && state != UserState.connecting;
   }
 
-  String get name => _name;
-  String get stateString {
-    return _stateStrings[state.index];
+  User(String name) {
+    _name = name;
+    state = UserState.disconnected;
   }
 
   bool isEqual(User otherUser) {

@@ -4,14 +4,14 @@ import '../user.dart';
 import 'loading.dart';
 
 class Login extends StatelessWidget {
-  Login({this.login, this.state, this.usernameError});
-
   final UserState state;
   final Function login;
   final String usernameError;
 
   final TextEditingController _usernameController = new TextEditingController();
   final TextEditingController _serverController = new TextEditingController();
+
+  Login({this.login, this.state, this.usernameError});
 
   void _login(context) {
     String username = _usernameController.text;
@@ -28,8 +28,8 @@ class Login extends StatelessWidget {
     }
 
     AssetImage logo = Theme.of(context).brightness == Brightness.dark
-      ? new AssetImage('assets/flutter_logo_dark.png')
-      : new AssetImage('assets/flutter_logo.png');
+      ? const AssetImage('assets/flutter_logo_dark.png')
+      : const AssetImage('assets/flutter_logo.png');
 
     List<Widget> formElements = <Widget> [
       new Column(
@@ -42,10 +42,9 @@ class Login extends StatelessWidget {
             ),
             autocorrect: false
           ),
-          // TODO: Don't smart-change text on input
           new TextField(
             controller: _serverController,
-            decoration: new InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Server Name/IP',
             ),
             autocorrect: false
@@ -53,7 +52,7 @@ class Login extends StatelessWidget {
         ]
       ),
       new RaisedButton(
-        child: new Text('Connect'),
+        child: const Text('Connect'),
         onPressed: () => _login(context)
       )
     ];
@@ -61,8 +60,8 @@ class Login extends StatelessWidget {
     // If keyboard is closed, show logo
     bool isKeyboardHidden = MediaQuery.of(context).viewInsets.bottom == 0;
     if (isKeyboardHidden) {
-      final List<Widget> logoElements = <Widget> [
-        new Image(image: logo, width: 133.0, height: 133.0,)
+      List<Widget> logoElements = <Widget> [
+        new Image(image: logo, width: 133.0, height: 133.0)
       ];
 
       logoElements.addAll(formElements);
@@ -72,7 +71,7 @@ class Login extends StatelessWidget {
     return new Center(
       child: new Form(
         child: new Padding (
-          padding: new EdgeInsets.fromLTRB(50.0, 0.0, 50.0, 0.0),
+          padding: const EdgeInsets.fromLTRB(50.0, 0.0, 50.0, 0.0),
           child: new Column (
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.stretch,

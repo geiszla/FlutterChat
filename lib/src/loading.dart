@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class Loading extends StatelessWidget {
-  Loading({this.text});
-
   final String text;
   final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
+
+  Loading({this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -12,8 +12,8 @@ class Loading extends StatelessWidget {
       child: new Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          new CircularProgressIndicator(),
-          new SizedBox(height: 50.0),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 50.0),
           new Text(text, style: _biggerFont)
         ]
       )
