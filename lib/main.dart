@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'src/app.dart';
+import 'package:flutterchat/widgets/app.dart';
 
 void main() {
   SystemChrome.setPreferredOrientations([

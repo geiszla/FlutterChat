@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../user.dart';
-import 'loading.dart';
+import 'package:flutterchat/widgets/loading.dart';
 
 class Login extends StatelessWidget {
   final UserState state;

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 import '../server.dart';
 import '../user.dart';
 import '../util.dart';
 import '../conversation.dart';
 
-import 'chat.dart';
-import 'loading.dart';
+import 'package:flutterchat/widgets/chat.dart';
+import 'package:flutterchat/widgets/loading.dart';
 
 class Users extends StatefulWidget {
   final User user;
@@ -24,8 +25,8 @@ class UsersState extends State<Users> {
 
   final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
 
-  void _getUsers() {
-    setState(() => _onlineUsers = null);
+  Future<Null> _getUsers() async {
+    Completer<Null> completer = new Completer<Null>();
 
     widget.server.getUsers((response) {
       RegExp listRegex = new RegExp(r"WHO\s*\[((?:'[^']*',?\s*)*)\]");
@@ -33,6 +34,7 @@ class UsersState extends State<Users> {
 
       if (listMatch == null) return;
 
+      // TODO: Simpler quote removal
       List<String> matchList = listMatch[1].split(',');
       RegExp nameRegex = new RegExp(r"'(.*)'");
       Iterable<String> usernames = matchList.map((listElement) {
@@ -40,9 +42,12 @@ class UsersState extends State<Users> {
         return nameMatch[1];
       }).where((username) => username != widget.user.name);
 
+      completer.complete();
       setState(() => _onlineUsers = usernames.toList());
       log('Online users: ${usernames.length > 0 ? usernames : '<none>'}');
     });
+
+    return completer.future;
   }
 
   void _openChat(String username) {
@@ -121,30 +126,35 @@ class UsersState extends State<Users> {
     }
 
     if (_onlineUsers.length > 0) {
-      // TODO: Change user Column to ListView
-      usersWidget = new Column(
-        children: _onlineUsers.map((username) {
-          Conversation currentConversation = _conversations[username];
+      List<Widget> userWidgets = _onlineUsers.map((username) {
+        Conversation currentConversation = _conversations[username];
 
-          String lastMessageString = '';
-          if (currentConversation != null) {
-            int messageCount = currentConversation.messages.length;
-            if (messageCount > 0) {
-              Message lastMessage = currentConversation.messages[messageCount - 1];
-              lastMessageString = lastMessage.isFromUser ? 'You: ' : '';
-              lastMessageString += lastMessage.text;
-            }
+        String lastMessageString = '';
+        if (currentConversation != null) {
+          int messageCount = currentConversation.messages.length;
+          if (messageCount > 0) {
+            Message lastMessage = currentConversation.messages[messageCount - 1];
+            lastMessageString = lastMessage.isFromUser ? 'You: ' : '';
+            lastMessageString += lastMessage.text;
           }
+        }
 
-          return new ListTile(
-            leading: new CircleAvatar(
-                child: new Text(username[0].toUpperCase())
-            ),
-            title: new Text(username),
-            subtitle: new Text(lastMessageString),
-            onTap: () => _openChat(username),
-          );
-        }).toList()
+        return new ListTile(
+          leading: new CircleAvatar(
+              child: new Text(username[0].toUpperCase())
+          ),
+          title: new Text(username),
+          subtitle: new Text(lastMessageString),
+          onTap: () => _openChat(username),
+        );
+      }).toList();
+
+      usersWidget = new RefreshIndicator(
+        onRefresh: _getUsers,
+        child: new ListView.builder(
+          itemBuilder: (_, int index) => userWidgets[index],
+          itemCount: userWidgets.length,
+        )
       );
     } else {
       usersWidget = new Center(

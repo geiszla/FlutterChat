@@ -68,6 +68,7 @@ class Server {
   }
 
   void register(String username, Function onFinish, {Function onError}) {
+    // TODO: Check if connected
     try {
       _sendString('REGISTER $username', onData: (response) {
         if (!response.contains('Welcome ')) {
@@ -85,9 +86,9 @@ class Server {
     }
   }
 
-  // TODO: [4] Invite user for conversation and send message
   void getUsers(Function callback) {
     // TODO: Callbacks to Futures
+    // TODO: Log exception in sendString
     _sendString('WHO', onData: callback);
   }
 

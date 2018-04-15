@@ -43,7 +43,7 @@ class ChatState extends State<Chat> {
       Message lastMessage;
       List<Widget> messageWidgets = widget.conversation.messages.map((message) {
         ChatMessage currentWidget = new ChatMessage(message: message,
-            lastMessage: lastMessage, currentUser: widget.user);
+            lastMessage: lastMessage);
         lastMessage = message;
 
         return currentWidget;
@@ -100,12 +100,12 @@ class ChatState extends State<Chat> {
   }
 }
 
+// TODO: UTF-8 messages
 class ChatMessage extends StatelessWidget {
   final Message message;
   final Message lastMessage;
-  final User currentUser;
 
-  ChatMessage({this.message, this.lastMessage, this.currentUser});
+  ChatMessage({this.message, this.lastMessage});
 
   @override
   Widget build(BuildContext context) {
@@ -123,23 +123,18 @@ class ChatMessage extends StatelessWidget {
         ? 0.0 : 10.0;
 
     return new Container(
-        alignment: messageAlignment,
-        margin: new EdgeInsets.fromLTRB(leftMargin, topMargin, rightMargin, 0.0),
-        child: new Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            new Card(
-                color: backgroundColor,
-                child: new Container(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 10.0,
-                      vertical: 8.0
-                  ),
-                  child: new Text(message.text, style: textStyle)
-                )
-              )
-          ]
+      alignment: messageAlignment,
+      margin: new EdgeInsets.fromLTRB(leftMargin, topMargin, rightMargin, 0.0),
+      child: new Card(
+        color: backgroundColor,
+        child: new Container(
+          margin: const EdgeInsets.symmetric(
+              horizontal: 10.0,
+              vertical: 8.0
+          ),
+          child: new Text(message.text, style: textStyle)
         )
+      )
     );
   }
 }

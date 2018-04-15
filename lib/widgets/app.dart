@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../server.dart';
 import '../user.dart';
 import '../util.dart';
-import 'login.dart';
-import 'users.dart';
+
+import 'package:flutterchat/widgets/login.dart';
+import 'package:flutterchat/widgets/users.dart';
 
 class App extends StatefulWidget {
   @override
@@ -26,7 +27,7 @@ class AppState extends State<App> {
     Match serverMatch = serverRegex.firstMatch(serverName);
 
     String hostName = serverMatch.group(1) != '' ? serverMatch.group(1)
-        : '192.168.0.98';
+        : '192.168.43.14';
     int port = serverMatch.group(2) != '' ? int.parse(serverMatch.group(2))
         : 9999;
 
