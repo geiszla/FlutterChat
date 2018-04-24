@@ -1,8 +1,16 @@
+enum MessageMode {
+  text, binary, command
+}
+
+const List<String> MessageModeStrings = const ['ABC', '010', '! ! !'];
+
 class Conversation {
   // TODO: Public variables
   bool isActive;
   bool isInForeground;
   String partnerUsername;
+  int channelMode = 0;
+  MessageMode messageMode = MessageMode.text;
 
   final List<Message> messages = new List<Message>();
 

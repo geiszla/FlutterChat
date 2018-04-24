@@ -26,11 +26,15 @@ class ChatState extends State<Chat> {
 
   void _sendMessage() {
     widget.sendMessage(_inputText, widget.conversation.partnerUsername);
+
     _inputController.clear();
+    _inputText = '';
   }
 
   @override
   build(BuildContext context) {
+    int channelMode = widget.conversation.channelMode;
+
     Widget chatContent;
     if (widget.conversation.messages.length == 0) {
       chatContent = new Center(
@@ -59,9 +63,30 @@ class ChatState extends State<Chat> {
       );
     }
 
+    Conversation conversation = widget.conversation;
     return new Scaffold(
       appBar: new AppBar(
-        title: new Text('${widget.conversation.partnerUsername} (online)')
+        title: new Text('${conversation.partnerUsername}'),
+        actions: <Widget>[
+          new FlatButton(
+            child: new Text(MessageModeStrings[conversation.messageMode.index]),
+            textColor: Colors.white,
+            onPressed: () => setState(() {
+              MessageMode messageMode = conversation.messageMode;
+              int nextIndex = (messageMode.index + 1) % MessageMode.values.length;
+              conversation.messageMode = MessageMode.values[nextIndex];
+            })
+          ),
+          new FlatButton(
+            child: new Text('Channel: ${channelMode.toString()}'),
+            textColor: Colors.white,
+            onPressed: conversation.messageMode == MessageMode.text
+              ? null
+              : () => setState(() =>
+                widget.conversation.channelMode = (channelMode + 1) % 6
+            ),
+          ),
+        ]
       ),
       body: new Column(
         children: <Widget> [

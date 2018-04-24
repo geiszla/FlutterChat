@@ -61,14 +61,28 @@ class UsersState extends State<Users> {
           return new Chat(
             user: widget.user,
             conversation: _conversations[username],
-            sendMessage: _sendMessage,
+            sendMessage: _handleSendMessagePress,
           );
         }
       )
     );
   }
 
-  void _sendMessage(String message, String username) {
+  void _sendMessage(String message, String username, int channelMode,
+      MessageMode messageMode, Function callback) {
+    switch (messageMode) {
+      case MessageMode.binary:
+        widget.server.sendMessageBitArray(message, username, channelMode, callback);
+        break;
+      case MessageMode.command:
+        widget.server.sendMessage(message, username, callback, channelMode: channelMode);
+        break;
+      default:
+        widget.server.sendMessage(message, username, callback);
+    }
+  }
+
+  void _handleSendMessagePress(String message, String username) {
     Conversation currentConversation = _conversations[username];
     setState(() {
       currentConversation.messages.add(
@@ -77,12 +91,14 @@ class UsersState extends State<Users> {
       currentChatState?.setState(() {});
     });
 
+    int channelMode = currentConversation.channelMode;
+    MessageMode messageMode = currentConversation.messageMode;
     if (!currentConversation.isActive) {
       widget.server.inviteUser(username,
           callback: (response) => _activateConversation(username));
     } else {
-      widget.server.sendMessage(message, username,
-        (response) => currentConversation.messages.last.changeToSent());
+      _sendMessage(message, username, channelMode, messageMode,
+          (response) => currentConversation.messages.last.changeToSent());
     }
   }
 
@@ -91,10 +107,14 @@ class UsersState extends State<Users> {
       _conversations[username] = new Conversation(username);
     }
 
-    _conversations[username].isActive = true;
-    _conversations[username].messages.forEach((message) {
-      widget.server.sendMessage(message.text, username,
-              (response) => message.changeToSent());
+    Conversation conversation = _conversations[username];
+    conversation.isActive = true;
+
+    int channelMode = conversation.channelMode;
+    MessageMode messageMode = conversation.messageMode;
+    conversation.messages.forEach((message) {
+      _sendMessage(message.text, username, channelMode, messageMode,
+          () => message.changeToSent());
     });
   }
 
