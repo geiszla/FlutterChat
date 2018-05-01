@@ -106,7 +106,7 @@ class Server {
       Function callback) {
     // TODO: Types in immediate function definitions
     String binaryMessage = message.codeUnits.map((int strInt) =>
-        strInt.toRadixString(2)).join();
+        '0${strInt.toRadixString(2)}').join();
 
     _sendString('${channelMode}MSG $username $binaryMessage', onData: callback);
   }
@@ -141,7 +141,7 @@ class Server {
       Match messageMatch = messageRegex.firstMatch(response);
 
       String username = messageMatch.group(1);
-      String message = _parseBinaryString(messageMatch.group(2));
+      String message = parseBinaryString(messageMatch.group(2));
 
       log('Message received from $username (via channel): $message');
       onMessage(message, username);
@@ -156,23 +156,12 @@ class Server {
       onMessage(message, username);
     } else {
       try {
-        onEncryptedMessage(_parseBinaryString(response));
+        onEncryptedMessage(parseBinaryString(response));
       } catch (_) {
         log('Message received: $response');
         _onData(response);
       }
     }
-  }
-
-  String _parseBinaryString(String binaryString) {
-    RegExp byteRegex = new RegExp(r'.{1,7}');
-    Iterable<Match> byteMatches = byteRegex.allMatches(binaryString);
-
-    Iterable<int> charCodes = byteMatches.map((byteMatch) =>
-        int.parse(byteMatch.group(0), radix: 2));
-    String asciiMessage = new String.fromCharCodes(charCodes);
-
-    return asciiMessage;
   }
 
   void _sendString(String data, {Function onData, Function onError}) {

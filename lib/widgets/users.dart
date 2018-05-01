@@ -23,6 +23,12 @@ class UsersState extends State<Users> {
   List<String> _onlineUsers;
   Map<String, Conversation> _conversations = new Map<String, Conversation>();
 
+  static const String _encryptionSignature = 'Sent by BarryBot, School of Computer'
+      ' Science, The University of Manchester';
+  String _decryptionUsername = '';
+  String _previousXorResult = '';
+
+
   final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
 
   Future<Null> _getUsers() async {
@@ -61,11 +67,19 @@ class UsersState extends State<Users> {
           return new Chat(
             user: widget.user,
             conversation: _conversations[username],
-            sendMessage: _handleSendMessagePress,
+            sendMessage: _handleMessageSend,
           );
         }
       )
     );
+  }
+
+  void _decryptAndAddMessage(String message, String key, Conversation conversation) {
+    String decryptedMessage = xorMessages(message, key);
+    setState(() => conversation.messages.add(
+      new Message('Decrypted message: $decryptedMessage', isFromUser: false)
+    ));
+    currentChatState.setState(() {});
   }
 
   void _sendMessage(String message, String username, int channelMode,
@@ -75,6 +89,38 @@ class UsersState extends State<Users> {
         widget.server.sendMessageBitArray(message, username, channelMode, callback);
         break;
       case MessageMode.command:
+        if (message.toLowerCase() == 'encrypt') {
+          widget.server.onEncryptedMessage = (message) {
+            Conversation currentConversation = _conversations[_decryptionUsername];
+
+            String currentDecryptionKey = currentConversation.decryptionKey;
+            if (currentDecryptionKey != null) {
+              _decryptAndAddMessage(message, currentDecryptionKey, currentConversation);
+              return;
+            } else {
+              setState(() => currentConversation.messages.add(
+                new Message('Encrypted message: $message', isFromUser: false)
+              ));
+              currentChatState.setState(() {});
+            }
+
+            if (_previousXorResult != '') {
+              String xorResult = xorMessages(message, _previousXorResult);
+              String key = xorMessages(
+                  xorMessages(_previousXorResult, _encryptionSignature),
+                  xorResult
+              );
+              _showDecryption(context, _decryptionUsername, message, xorResult, key);
+
+              _previousXorResult = xorMessages(_encryptionSignature, message);
+            } else {
+              _previousXorResult = xorMessages(_encryptionSignature, message);
+              _sendMessage('ENCRYPT', username, 0, MessageMode.command, () {});
+            }
+          };
+          _decryptionUsername = username;
+        }
+
         widget.server.sendMessage(message, username, callback, channelMode: channelMode);
         break;
       default:
@@ -82,11 +128,11 @@ class UsersState extends State<Users> {
     }
   }
 
-  void _handleSendMessagePress(String message, String username) {
+  void _handleMessageSend(String message, String username) {
     Conversation currentConversation = _conversations[username];
     setState(() {
       currentConversation.messages.add(
-        new Message(text: message, isFromUser: true)
+        new Message(message, isFromUser: true)
       );
       currentChatState?.setState(() {});
     });
@@ -114,8 +160,45 @@ class UsersState extends State<Users> {
     MessageMode messageMode = conversation.messageMode;
     conversation.messages.forEach((message) {
       _sendMessage(message.text, username, channelMode, messageMode,
-          () => message.changeToSent());
+          (response) => message.changeToSent());
     });
+  }
+
+  void _showDecryption(BuildContext context, String username,
+      String previousMessage, String decryptedMessage, String key) {
+    showDialog(builder: (BuildContext context) {
+      AlertDialog infoAlert = new AlertDialog(
+        title: const Text('Does this message seem decrypted?'),
+        content: new Text(decryptedMessage),
+        actions: <Widget>[
+          new FlatButton(
+            child: const Text('No'),
+            onPressed: () {
+              Navigator.pop(context);
+              _sendMessage('ENCRYPT', username, 0, MessageMode.command, () {});
+            }
+          ),
+          new FlatButton(
+            child: const Text('Yes'),
+            onPressed: () {
+              setState(() {
+                Conversation currentConversation = _conversations[username];
+                _decryptAndAddMessage(previousMessage, key, currentConversation);
+                currentConversation.messages.add(
+                    new Message('Decrypted message: $decryptedMessage', isFromUser: false)
+                );
+                _conversations[username].decryptionKey = key;
+              });
+
+              currentChatState.setState(() {});
+              Navigator.pop(context);
+            }
+          )
+        ]
+      );
+
+      return infoAlert;
+    }, context: context);
   }
 
   @override
@@ -130,7 +213,7 @@ class UsersState extends State<Users> {
     widget.server.onMessage = (message, username) {
       setState(() {
         _conversations[username].messages.add(
-            new Message(text: message, isFromUser: false)
+            new Message(message, isFromUser: false)
         );
       });
       currentChatState?.setState(() {});

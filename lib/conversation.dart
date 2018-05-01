@@ -9,8 +9,11 @@ class Conversation {
   bool isActive;
   bool isInForeground;
   String partnerUsername;
+
   int channelMode = 0;
   MessageMode messageMode = MessageMode.text;
+
+  String decryptionKey;
 
   final List<Message> messages = new List<Message>();
 
@@ -32,7 +35,7 @@ class Message {
   final bool isFromUser;
   final String text;
 
-  Message({this.isFromUser, this.text});
+  Message(this.text, {this.isFromUser});
 
   void changeToSent() {
     _sendTime = new DateTime.now();
