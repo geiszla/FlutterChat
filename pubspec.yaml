@@ -28,6 +28,11 @@ flutter:
   assets:
     - assets/flutter_logo.png
     - assets/flutter_logo_dark.png
+    - assets/peppers.jpg
+    - assets/damagedpeppers.jpg
+    - assets/peppers.bmp
+    - assets/damagedpeppers.bmp
+    - assets/verydamagedpeppers.bmp
 
   # To add assets to your application, add an assets section, like this:
   # assets:

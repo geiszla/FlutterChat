@@ -6,6 +6,7 @@ import '../util.dart';
 
 import 'package:flutterchat/widgets/login.dart';
 import 'package:flutterchat/widgets/users.dart';
+import 'package:flutterchat/widgets/image.dart';
 
 class App extends StatefulWidget {
   @override
@@ -176,6 +177,20 @@ class AppState extends State<App> {
           ) : null,
           title: const Text('Flutter Chat'),
           actions: <Widget>[
+            new Builder(
+              builder: (BuildContext context) {
+                return new IconButton(
+                  icon: const Icon(Icons.image),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      new MaterialPageRoute(
+                        builder: (context) => new ImageViewer()
+                      )
+                    );
+                  }
+                );
+              }
+            ),
             new IconButton(
               icon: const Icon(Icons.brightness_4),
               onPressed: () => setState(() => _isNightModeOn = !_isNightModeOn)
