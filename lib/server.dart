@@ -10,9 +10,14 @@ class Server {
 
   Function _onData = () {};
   Function _onError = () {};
-  Function onInvitation = (username) => {};
-  Function onMessage = (message, username) => {};
-  Function onEncryptedMessage = (encryptedMessage) => {};
+
+  Function onInvitation = (String username) {};
+  Function onMessage = (String message, String username) {};
+  Function onEncryptedMessage = (String encryptedMessage) {};
+  Function onAudio = (List<int> audioBytes, String username) {};
+
+  bool busy = false;
+  String receivedData = '';
 
   String get host => _host;
 
@@ -98,7 +103,7 @@ class Server {
   void sendMessage(String message, String username, Function callback,
       { int channelMode }) {
     String channelModeString = channelMode != null ? channelMode.toString() : '';
-    _sendString('${channelModeString}MSG $username $message', onData: callback);
+    _sendString('${channelModeString}MSG', data: '$username $message', onData: callback);
     log('Message sent to $username: $message');
   }
 
@@ -108,7 +113,14 @@ class Server {
     String binaryMessage = message.codeUnits.map((int strInt) =>
         '0${strInt.toRadixString(2)}').join();
 
-    _sendString('${channelMode}MSG $username $binaryMessage', onData: callback);
+    _sendString('${channelMode}MSG $username', data: binaryMessage, onData: callback);
+  }
+
+  void sendData(List<int> bytes, String username, int channelMode, Function callback) {
+    String binaryMessage = bytes.map((int strInt) =>
+        '0${strInt.toRadixString(2)}').join();
+
+    _sendString('${channelMode}MSG $username', data: binaryMessage, onData: callback);
   }
 
   void inviteUser(String username, {Function callback}) {
@@ -138,13 +150,20 @@ class Server {
       if (onInvitation != null) onInvitation(invitationMatch.group(1));
     } else if (response.contains('via channel'))  {
       RegExp messageRegex = new RegExp(r'(.*) \(via channel\): ([01]*)');
-      Match messageMatch = messageRegex.firstMatch(response);
+      Iterable<Match> messageMatches = messageRegex.allMatches(response);
 
-      String username = messageMatch.group(1);
-      String message = parseBinaryString(messageMatch.group(2));
+      String data = messageMatches.fold('', (accumulator, messageMatch) =>
+        accumulator + messageMatch.group(2));
+      String username = messageMatches.elementAt(messageMatches.length - 1).group(1);
+      String message = parseBinaryString(data);
 
-      log('Message received from $username (via channel): $message');
-      onMessage(message, username);
+      log('Data message received from $username (via channel).');
+
+      if (message.substring(0, 4) == 'RIFF') {
+        onAudio(message.codeUnits, username);
+      } else {
+        onMessage(message, username);
+      }
     } else if (response.contains('MSG')) {
       RegExp messageRegex = new RegExp(r'MSG\s*([^\s]*)\s*(.*)');
       Match messageMatch = messageRegex.firstMatch(response);
@@ -164,7 +183,7 @@ class Server {
     }
   }
 
-  void _sendString(String data, {Function onData, Function onError}) {
+  void _sendString(String command, {String data, Function onData, Function onError}) {
     if (_socket == null) {
       logError('Socket is not open.');
       throw new StateError('Socket is not open.');
@@ -172,6 +191,31 @@ class Server {
 
     if (onData != null) _onData = onData;
     if (onError != null) _onError = onError;
-    _socket.write(data);
+
+    if (data == null) {
+      _socket.write(command);
+    } else {
+//      var fromByte = new StreamTransformer<List<int>, String>.fromHandlers(
+//          handleData: (List<int> data, EventSink<String> sink) {
+//        sink.add('${data.buffer.toString()}');
+//      });
+//
+//      _socket.transform(fromByte);
+      RegExp byteRegex = new RegExp(r'.{1,1024}');
+      Iterable<Match> chunkMatches = byteRegex.allMatches(data);
+
+      if (chunkMatches.length > 300) {
+        logError('File is too large to be sent.');
+        return;
+      }
+
+      chunkMatches.toList().asMap().forEach((int index, Match chunkMatch) {
+        String chunk = '$command ${chunkMatch.group(0)}';
+        _socket.write(chunk);
+
+        log('Sending data: $index/${chunkMatches.length}');
+        sleep(new Duration(milliseconds: 100));
+      });
+    }
   }
 }

@@ -33,9 +33,14 @@ class Message {
   bool get isSent => _isSent;
 
   final bool isFromUser;
+  bool isAudio;
   final String text;
 
-  Message(this.text, {this.isFromUser});
+  Message(this.text, {this.isFromUser, this.isAudio}) {
+    if (isAudio == null) {
+      this.isAudio = false;
+    }
+  }
 
   void changeToSent() {
     _sendTime = new DateTime.now();

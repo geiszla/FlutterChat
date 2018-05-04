@@ -28,7 +28,7 @@ class AppState extends State<App> {
     Match serverMatch = serverRegex.firstMatch(serverName);
 
     String hostName = serverMatch.group(1) != '' ? serverMatch.group(1)
-        : '10.0.2.2';
+        : '192.168.0.98';
     int port = serverMatch.group(2) != '' ? int.parse(serverMatch.group(2))
         : 9999;
 

@@ -1,5 +1,17 @@
 import 'package:flutter/material.dart';
 
+List<int> bytesToInt16List(List<int> bytes, { int offset }) {
+  List<int> int16List = new List<int>();
+  for (int i = offset ?? 0; i < bytes.length; i += 2) {
+    int sampleValue = (bytes[i + 1] << 8 | bytes[i]);
+    if (sampleValue > 32768) sampleValue -= 65536;
+
+    int16List.add(sampleValue);
+  }
+
+  return int16List;
+}
+
 String parseBinaryString(String binaryString) {
   RegExp byteRegex = new RegExp(r'.{1,8}');
   Iterable<Match> byteMatches = byteRegex.allMatches(binaryString);

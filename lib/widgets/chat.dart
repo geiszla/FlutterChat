@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
-
 import '../conversation.dart';
 import '../user.dart';
+
+import './chatMessage.dart';
+import './record.dart';
+import 'package:flutter/material.dart';
 
 ChatState currentChatState;
 
@@ -24,11 +26,19 @@ class ChatState extends State<Chat> {
   String _inputText = '';
   TextEditingController _inputController = new TextEditingController();
 
-  void _sendMessage() {
-    widget.sendMessage(_inputText, widget.conversation.partnerUsername);
+  void _sendMessage(String message, bool isAudio) {
+    widget.sendMessage(message, widget.conversation.partnerUsername, isAudio: isAudio);
 
-    _inputController.clear();
-    _inputText = '';
+    if (!isAudio) {
+      _inputController.clear();
+      _inputText = '';
+    }
+  }
+
+  void _showRecordDialog(BuildContext context) async{
+    showDialog(builder: (BuildContext context) {
+      return new Record(sendMessage: _sendMessage);
+    }, context: context);
   }
 
   @override
@@ -110,55 +120,29 @@ class ChatState extends State<Chat> {
                   )
                 ),
                 new Container(
+                  margin: const EdgeInsets.only(left: 4.0),
+                  child: new Builder(
+                    builder: (context) => new IconButton(
+                      icon: const Icon(Icons.music_note),
+                      onPressed: conversation.messageMode == MessageMode.binary
+                        ? () => _showRecordDialog(context)
+                        : null
+                    )
+                  )
+                ),
+                new Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: new IconButton(
                     icon: const Icon(Icons.send),
-                    onPressed: _inputText != '' ? _sendMessage : null
+                    onPressed: _inputText != ''
+                        ? () => _sendMessage(_inputText, false)
+                        : null
                   )
                 )
               ]
             )
           )
         ]
-      )
-    );
-  }
-}
-
-// TODO: UTF-8 messages
-class ChatMessage extends StatelessWidget {
-  final Message message;
-  final Message lastMessage;
-
-  ChatMessage({this.message, this.lastMessage});
-
-  @override
-  Widget build(BuildContext context) {
-    ThemeData theme = Theme.of(context);
-    Color backgroundColor = message.isFromUser ? theme.primaryColor : null;
-    TextStyle textStyle = message.isFromUser ? theme.accentTextTheme.body1
-        : null;
-    Alignment messageAlignment = message.isFromUser ? Alignment.centerRight
-        : Alignment.centerLeft;
-
-    double leftMargin = message.isFromUser ? 100.0 : 20.0;
-    double rightMargin = message.isFromUser ? 20.0 : 100.0;
-
-    double topMargin = message.isFromUser == lastMessage?.isFromUser
-        ? 0.0 : 10.0;
-
-    return new Container(
-      alignment: messageAlignment,
-      margin: new EdgeInsets.fromLTRB(leftMargin, topMargin, rightMargin, 0.0),
-      child: new Card(
-        color: backgroundColor,
-        child: new Container(
-          margin: const EdgeInsets.symmetric(
-              horizontal: 10.0,
-              vertical: 8.0
-          ),
-          child: new Text(message.text, style: textStyle)
-        )
       )
     );
   }

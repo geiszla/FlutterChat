@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
 
 import '../server.dart';
 import '../user.dart';
@@ -8,6 +9,8 @@ import '../conversation.dart';
 
 import 'package:flutterchat/widgets/chat.dart';
 import 'package:flutterchat/widgets/loading.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' show basename, dirname;
 
 class Users extends StatefulWidget {
   final User user;
@@ -74,6 +77,58 @@ class UsersState extends State<Users> {
     );
   }
 
+  Future<String> _fixAudio(String filePath) async {
+    File inputFile = new File(filePath);
+    List<int> audioBytes = new List<int>.from((await inputFile.readAsBytes()));
+
+    int audioStartIndex = 44;
+    List<int> audioSamples = bytesToInt16List(audioBytes, offset: audioStartIndex);
+
+    // Replace lost packets with previous or next packet
+    const int packetSize = 200;
+    List<int> previousPacket;
+    for (int i = 0; i < audioSamples.length; i += packetSize) {
+      int packetEnd = i + packetSize;
+      int nextPacketEnd = packetEnd + packetSize;
+      List<int> currentPacket = audioSamples.sublist(i, i + packetSize);
+
+      if (currentPacket.indexWhere((byte) => byte != 0) == -1){
+        if (previousPacket != null) {
+          audioSamples.replaceRange(i, packetEnd, previousPacket);
+        } else {
+          List<int> nextPacket = audioSamples.sublist(packetEnd, nextPacketEnd);
+          audioSamples.replaceRange(packetEnd, nextPacketEnd, nextPacket);
+        }
+      }
+
+      previousPacket = currentPacket;
+    }
+
+    // Smooth out bit errors
+    for (int i = 1; i < audioSamples.length - 1; i++) {
+      if ((audioSamples[i] - audioSamples[i - 1]).abs() > 16000) {
+        audioSamples[i] = ((audioSamples[i - 1] + audioSamples[i + 1]) / 2).round();
+      }
+    }
+
+    List<int> packetBytes = new List<int>();
+    for (int i = 0; i < audioSamples.length; i++) {
+      if (audioSamples[i] < 0) audioSamples[i] += 65536;
+
+      int byte1 = audioSamples[i] >> 8;
+      int byte2 = audioSamples[i] - (byte1 << 8);
+
+      packetBytes.add(byte2);
+      packetBytes.add(byte1);
+    }
+    audioBytes.replaceRange(audioStartIndex, audioBytes.length, packetBytes);
+
+    File outputFile = new File('${dirname(inputFile.path)}/fixed${basename(inputFile.path)}');
+    await outputFile.writeAsBytes(audioBytes);
+
+    return outputFile.path;
+  }
+
   void _decryptAndAddMessage(String message, String key, Conversation conversation) {
     String decryptedMessage = xorMessages(message, key);
     setState(() => conversation.messages.add(
@@ -128,11 +183,11 @@ class UsersState extends State<Users> {
     }
   }
 
-  void _handleMessageSend(String message, String username) {
+  Future<void> _handleMessageSend(String message, String username, { bool isAudio }) async {
     Conversation currentConversation = _conversations[username];
     setState(() {
       currentConversation.messages.add(
-        new Message(message, isFromUser: true)
+        new Message(message, isFromUser: true, isAudio: isAudio)
       );
       currentChatState?.setState(() {});
     });
@@ -143,8 +198,24 @@ class UsersState extends State<Users> {
       widget.server.inviteUser(username,
           callback: (response) => _activateConversation(username));
     } else {
-      _sendMessage(message, username, channelMode, messageMode,
+      if (isAudio) {
+        List<int> audioBytes = await (new File(message)).readAsBytes();
+        widget.server.sendData(audioBytes, username, channelMode,
           (response) => currentConversation.messages.last.changeToSent());
+      } else {
+        _sendMessage(message, username, channelMode, messageMode,
+          (response) => currentConversation.messages.last.changeToSent());
+      }
+    }
+
+    if (isAudio && message.contains('sample')) {
+      String fixedAudioFileName = await _fixAudio(message);
+      setState(() {
+        _conversations[username].messages.add(
+          new Message(fixedAudioFileName, isFromUser: true, isAudio: true)
+        );
+      });
+      currentChatState?.setState(() {});
     }
   }
 
@@ -158,9 +229,15 @@ class UsersState extends State<Users> {
 
     int channelMode = conversation.channelMode;
     MessageMode messageMode = conversation.messageMode;
-    conversation.messages.forEach((message) {
-      _sendMessage(message.text, username, channelMode, messageMode,
+    conversation.messages.forEach((message) async {
+      if (message.isAudio) {
+        List<int> audioBytes = await (new File(message.text)).readAsBytes();
+        widget.server.sendData(audioBytes, username, channelMode,
+          (response) => conversation.messages.last.changeToSent());
+      } else {
+        _sendMessage(message.text, username, channelMode, messageMode,
           (response) => message.changeToSent());
+      }
     });
   }
 
@@ -206,14 +283,29 @@ class UsersState extends State<Users> {
     super.initState();
     _getUsers();
 
-    widget.server.onInvitation = (username) {
+    widget.server.onInvitation = (String username) {
       widget.server.acceptInvitation(username);
       _activateConversation(username);
     };
-    widget.server.onMessage = (message, username) {
+
+    widget.server.onMessage = (String message, String username) {
       setState(() {
         _conversations[username].messages.add(
             new Message(message, isFromUser: false)
+        );
+      });
+      currentChatState?.setState(() {});
+    };
+
+    widget.server.onAudio = (List<int> audioBytes, String username) async {
+      Directory tempDirectory = await getTemporaryDirectory();
+      int time = new DateTime.now().millisecondsSinceEpoch;
+      File audioFile = new File('$tempDirectory/$time.wav');
+      await audioFile.writeAsBytes(audioBytes);
+
+      setState(() {
+        _conversations[username].messages.add(
+          new Message(audioFile.path, isFromUser: false, isAudio: true)
         );
       });
       currentChatState?.setState(() {});
